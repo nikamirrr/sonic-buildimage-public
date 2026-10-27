@@ -20,8 +20,11 @@
 # guard is not enabled the command returns success immediately, so autoboot
 # proceeds exactly as with the default boot_guard.
 #
-# This hook ships only in the Nexthop platform package, so nh_stormguard is
-# always present where it runs.
+# The shared Aspeed TFTP installer stages this hook for every AST2700 board, and
+# only the Nexthop U-Boot has nh_stormguard, so other boards keep the default
+# boot_guard.
+
+DT_COMPATIBLE="${DT_COMPATIBLE:-/proc/device-tree/compatible}"
 
 sonic_uboot_env_log() {
     msg="$*"
@@ -30,6 +33,11 @@ sonic_uboot_env_log() {
         echo "[$(date '+%Y-%m-%d %H:%M:%S')] $msg" >> "$SONIC_UBOOT_ENV_LOG_FILE"
     fi
 }
+
+if ! tr '\0' '\n' 2>/dev/null < "$DT_COMPATIBLE" | grep -q '^nexthop,'; then
+    sonic_uboot_env_log "Not a Nexthop board, keeping default boot_guard"
+    exit 0
+fi
 
 sonic_uboot_env_log "Applying Nexthop storm-guard boot_guard"
 fw_setenv boot_guard "nh_stormguard" \
